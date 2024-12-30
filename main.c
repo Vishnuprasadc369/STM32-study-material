@@ -34,7 +34,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RX_BUFFER_SIZE 10  // Size of the reception buffer
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -43,14 +43,12 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
 
 UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 // Buffers for data
-uint8_t rxBuffer[RX_BUFFER_SIZE];  // Buffer for received data
-
+char letter[5];
 
 uint8_t intr;//=0;
 
@@ -61,7 +59,6 @@ void SystemClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART3_UART_Init(void);
-static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -104,9 +101,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART3_UART_Init();
-  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UART_Transmit(&huart3, "hello", 5, HAL_MAX_DELAY);
+  HAL_UART_Receive_IT(&huart3,( uint8_t *) letter, 1);
 
   /* USER CODE END 2 */
 
@@ -114,27 +111,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint32_t adcValue = 0; // Variable to store ADC value
-	          char message[50];      // Buffer for USART message
 
-	          // Start ADC conversion
-	          HAL_ADC_Start(&hadc1);
+	    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+	  	HAL_Delay(100);
 
-	          // Wait for ADC conversion to complete
-	          if (HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY) == HAL_OK)
-	          {
-	              // Get ADC value
-	              adcValue = HAL_ADC_GetValue(&hadc1);
-
-	              // Format ADC value as a string
-	              sprintf(message, "ADC Value: %lu\r\n", adcValue);
-
-	              // Transmit the string over USART
-	              HAL_UART_Transmit(&huart3, (uint8_t *)message, strlen(message), HAL_MAX_DELAY);
-	          }
-
-	          // Small delay
-	          HAL_Delay(100);
 
 
     /* USER CODE END WHILE */
@@ -198,58 +178,6 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_ADC1_Init(void)
-{
-
-  /* USER CODE BEGIN ADC1_Init 0 */
-
-  /* USER CODE END ADC1_Init 0 */
-
-  ADC_ChannelConfTypeDef sConfig = {0};
-
-  /* USER CODE BEGIN ADC1_Init 1 */
-
-  /* USER CODE END ADC1_Init 1 */
-
-  /** Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion)
-  */
-  hadc1.Instance = ADC1;
-  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
-  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
-  hadc1.Init.ContinuousConvMode = ENABLE;
-  hadc1.Init.DiscontinuousConvMode = DISABLE;
-  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  if (HAL_ADC_Init(&hadc1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-
-  /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
-  */
-  sConfig.Channel = ADC_CHANNEL_0;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN ADC1_Init 2 */
-
-  /* USER CODE END ADC1_Init 2 */
-
-}
-
-/**
   * @brief USART3 Initialization Function
   * @param None
   * @retval None
@@ -297,9 +225,9 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
@@ -317,7 +245,13 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	HAL_UART_Receive_IT(&huart3, ( uint8_t *)letter, 1);
+	HAL_UART_Transmit(&huart3, ( uint8_t *)letter, 1, HAL_MAX_DELAY);
 
+
+}
 /* USER CODE END 4 */
 
  /* MPU Configuration */
